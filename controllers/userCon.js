@@ -84,9 +84,9 @@ export const requestResetPassword = async (req, res) => {
       }
     })
 
-    const FRONT_URL =  "http://localhost:5173"
+    
 
-    const resetLink = `${FRONT_URL}/password-reset?token=${token}`
+    const resetLink = `${process.env.FRONTEND_URL}/password-reset?token=${token}`
 
 
     await transporter.sendMail({
