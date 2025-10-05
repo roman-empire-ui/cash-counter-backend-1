@@ -22,6 +22,12 @@ export const signin = async (req, res) => {
       return res.status(400).json({ success: false, message: "User already exists" });
     }
 
+    const adminCount = await Admin.countDocuments()
+    console.log(adminCount)
+    if(adminCount >= 4) {
+      return res.status(400).json({success : false , message : 'Admins limit reached...!'})
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
@@ -86,7 +92,7 @@ export const requestResetPassword = async (req, res) => {
       to: admin.email,
       from: {
         email: process.env.SENDGRID_VERIFIED_SENDER,
-        name: "Cash Counter Support"  // ✅ adds a display name
+        name: "Cash Counter Support"  
       },
       subject: 'Password Reset Request',
       html: `<p>Hello,</p>
@@ -98,17 +104,13 @@ export const requestResetPassword = async (req, res) => {
           enable: false
         }
       },
-      categories: ["password-reset"], // ✅ helps SendGrid classify it properly
+      categories: ["password-reset"], 
       trackingSettings: {
         clickTracking: { enable: false },
-        openTracking: { enable: false } // ✅ disables tracking pixels (Gmail trusts more)
+        openTracking: { enable: false } 
       }
     };
     
-
-    // Send email with detailed error catching
-
-    console.log(msg)
     await sgMail.send(msg)
 
     res.status(200).json({ success: true, message: 'Reset link has been sent to your email' });
@@ -184,7 +186,7 @@ export const login = async (req, res) => {
         name: admin.name,
         email: admin.email,
       },
-      message: "Logged in successfully",
+      message: `Welcome back ${admin.name}`,
     });
   } catch (e) {
     console.error("Login error:", e);
