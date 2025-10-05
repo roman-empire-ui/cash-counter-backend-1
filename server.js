@@ -14,7 +14,10 @@ app.use(express.json())
 
 
 const corsOptions = {
-    origin: ['https://cash-counter-frontend.vercel.app', 'http://localhost:5173'],
+  origin: [
+    /^https:\/\/cash-counter-frontend.*\.vercel\.app$/, // Regex to allow any preview URL
+    "http://localhost:5173"
+  ],
     methods: 'GET,POST,PUT,DELETE',
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
