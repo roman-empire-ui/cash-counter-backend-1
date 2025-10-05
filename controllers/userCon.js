@@ -76,7 +76,7 @@ export const requestResetPassword = async (req, res) => {
     await admin.save()
    
     const transporter = nodemailer.createTransport({
-      service: "GMAIL",
+      service: "gmail",
       auth: {
         user: process.env.APP_EMAIL,
         pass: process.env.APP_PASS,
@@ -86,7 +86,7 @@ export const requestResetPassword = async (req, res) => {
 
     
 
-    const resetLink = `${process.env.FRONTEND_URL}/password-reset?token=${token}`
+    const resetLink = `${process.env.FRONTEND_URL ||  "http://localhost:5173"}/password-reset?token=${token}`
 
 
     await transporter.sendMail({
