@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import Admin from '../models/userModel.js'
 import genToken from '../utils/genToken.js'
 import crypto from 'crypto'
-import nodemailer from 'nodemailer'
+import { sgMail } from '../server.js'
 
 
 
@@ -63,11 +63,11 @@ export const requestResetPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email) 
+    if (!email)
       return res.status(400).json({ success: false, message: 'Email required' });
 
     const admin = await Admin.findOne({ email });
-    if (!admin) 
+    if (!admin)
       return res.status(400).json({ success: false, message: 'Admin not found' });
 
     // Generate a 6-byte hex token
@@ -77,31 +77,39 @@ export const requestResetPassword = async (req, res) => {
     await admin.save();
 
     // Create Nodemailer transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.APP_EMAIL,
-        pass: process.env.APP_PASS, // Make sure this has NO spaces
-      }
-    });
+
 
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/password-reset?token=${token}`;
 
+
+    const msg = {
+      to: admin.email,
+      from: {
+        email: process.env.SENDGRID_VERIFIED_SENDER,
+        name: "Cash Counter Support"  // ✅ adds a display name
+      },
+      subject: 'Password Reset Request',
+      html: `<p>Hello,</p>
+            <p>We received a request to reset your password for Cash Counter.</p>
+            <p>Click <a href="${resetLink}">here</a> to reset it. This link expires in 10 minutes.</p>
+            <p>Thank you,<br/>Cash Counter Team</p>`,
+      mailSettings: {
+        sandboxMode: {
+          enable: false
+        }
+      },
+      categories: ["password-reset"], // ✅ helps SendGrid classify it properly
+      trackingSettings: {
+        clickTracking: { enable: false },
+        openTracking: { enable: false } // ✅ disables tracking pixels (Gmail trusts more)
+      }
+    };
+    
+
     // Send email with detailed error catching
-    try {
-      await transporter.sendMail({
-        from: process.env.APP_EMAIL,
-        to: admin.email,
-        subject: 'Password Reset',
-        html: `<p>Click <a href="${resetLink}">here</a> to reset your password. Link expires in 10 minutes.</p>`
-      });
-    } catch (mailErr) {
-      console.error("Nodemailer failed:", mailErr);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Failed to send email: " + mailErr.message 
-      });
-    }
+
+    console.log(msg)
+    await sgMail.send(msg)
 
     res.status(200).json({ success: true, message: 'Reset link has been sent to your email' });
 
@@ -160,7 +168,7 @@ export const login = async (req, res) => {
 
     // Check password
     const isMatch = await bcrypt.compare(password, admin.password);
-  
+
     if (!isMatch) {
       return res.status(400).json({ success: false, message: "Invalid Credentials" });
     }

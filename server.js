@@ -1,5 +1,8 @@
 import dotenv from 'dotenv'
 dotenv.config()
+import sgMail from '@sendgrid/mail'
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+export {sgMail}
 import express from 'express'
 import cors from 'cors'
 import connectToDB from './db/config.js'
@@ -7,6 +10,7 @@ import adminRoutes from './routes/userRouter.js'
 import stockRoutes from './routes/stockRouter.js'
 import counterRoutes from './routes/counterRouter.js'
 import distRoutes from './routes/distributorRouter.js'
+import { log } from 'console';
 
 //Using middlewares
 const app = express()
