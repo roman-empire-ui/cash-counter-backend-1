@@ -60,49 +60,57 @@ export const signin = async (req, res) => {
 
 // ---------------- RESET PASSWORD VIA EMAIL ----------------
 export const requestResetPassword = async (req, res) => {
-
   try {
-    const { email } = req.body
+    const { email } = req.body;
 
-    if (!email) return res.status(400).json({ success: false, message: 'Email required' })
+    if (!email) 
+      return res.status(400).json({ success: false, message: 'Email required' });
 
-    const admin = await Admin.findOne({ email })
+    const admin = await Admin.findOne({ email });
+    if (!admin) 
+      return res.status(400).json({ success: false, message: 'Admin not found' });
 
-    if (!admin) return res.status(400).json({ success: false, message: 'Admin not found in server' })
+    // Generate a 6-byte hex token
+    const token = crypto.randomBytes(6).toString('hex');
+    admin.resetPasswordToken = token;
+    admin.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 min
+    await admin.save();
 
-    const token = crypto.randomBytes(6).toString('hex')
-    admin.resetPasswordToken = token
-    admin.resetPasswordExpires = Date.now() + 10 * 60 * 1000
-    await admin.save()
-   
+    // Create Nodemailer transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.APP_EMAIL,
-        pass: process.env.APP_PASS,
-
+        pass: process.env.APP_PASS, // Make sure this has NO spaces
       }
-    })
+    });
 
-    
+    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/password-reset?token=${token}`;
 
-    const resetLink = `${process.env.FRONTEND_URL ||  "http://localhost:5173"}/password-reset?token=${token}`
+    // Send email with detailed error catching
+    try {
+      await transporter.sendMail({
+        from: process.env.APP_EMAIL,
+        to: admin.email,
+        subject: 'Password Reset',
+        html: `<p>Click <a href="${resetLink}">here</a> to reset your password. Link expires in 10 minutes.</p>`
+      });
+    } catch (mailErr) {
+      console.error("Nodemailer failed:", mailErr);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to send email: " + mailErr.message 
+      });
+    }
 
+    res.status(200).json({ success: true, message: 'Reset link has been sent to your email' });
 
-    await transporter.sendMail({
-      from: process.env.APP_EMAIL,
-      to: admin.email,
-      subject: 'Password reset',
-      html: `<p> Click <a href = ${resetLink}> Here </a> to reset your password. Link will Expires in 10 Minutes</p>`
-    })
-
-    res.status(200).json({ success: true, message: 'Reset link has been sent to your E-Mail' })
-
-  } catch (e) {
-    console.log('error', e)
-    return res.status(500).json({ success: false, message: 'Internal server error' })
+  } catch (err) {
+    console.error("RequestResetPassword error:", err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
-}
+};
+
 export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
