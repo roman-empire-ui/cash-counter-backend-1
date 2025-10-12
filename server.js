@@ -10,7 +10,7 @@ import adminRoutes from './routes/userRouter.js'
 import stockRoutes from './routes/stockRouter.js'
 import counterRoutes from './routes/counterRouter.js'
 import distRoutes from './routes/distributorRouter.js'
-import { log } from 'console';
+import handRoutes from './routes/counterHanRouter.js'
 
 //Using middlewares
 const app = express()
@@ -35,6 +35,7 @@ app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/stock' , stockRoutes)
 app.use('/api/v1/counter' , counterRoutes)
 app.use("/api/v1/dist", distRoutes);
+app.use('/api/v1/speech',handRoutes)
 //Connecting Database
 connectToDB()
 
