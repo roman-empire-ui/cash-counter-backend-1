@@ -1,6 +1,6 @@
 // controllers/remainingCashController.js
 import RemCash from "../models/remainingCashModel.js";
-
+import moment from "moment";
 export const saveRemainingCash = async (req, res) => {
   try {
     // debugging helper: uncomment if you need to inspect what frontend sends
@@ -149,3 +149,74 @@ export const getRemainingCash = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error: e.message });
   }
 };
+
+
+
+
+
+// ✅ Get Monthly Profit/Loss Summary
+export const getMonthlyProfitLoss = async (req, res) => {
+  try {
+    let { month, year } = req.query;
+
+    // If not provided → current month
+    const now = new Date();
+    const selectedMonth = month ? Number(month) - 1 : now.getMonth();
+    const selectedYear = year ? Number(year) : now.getFullYear();
+
+    // Start and end of month
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+
+    // Fetch remaining cash entries for that month
+    const entries = await RemCash.find({
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+
+    if (!entries.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No remaining cash data found for ${selectedMonth + 1}/${selectedYear}`,
+      });
+    }
+
+    // Calculate total profit and loss from the "difference" field
+    let totalProfit = 0;
+    let totalLoss = 0;
+
+    entries.forEach((entry) => {
+      const diff = entry.difference || 0;
+
+      if (diff < 0) {
+        // negative difference means profit
+        totalProfit += Math.abs(diff);
+      } else if (diff > 0) {
+        // positive difference means loss
+        totalLoss += diff;
+      }
+    });
+
+    const netTotal = totalProfit - totalLoss;
+
+    res.status(200).json({
+      success: true,
+      month: selectedMonth + 1,
+      year: selectedYear,
+      totalProfit,
+      totalLoss,
+      netTotal,
+      entriesCount: entries.length,
+    });
+  } catch (err) {
+    console.error("[getMonthlyProfitLoss error]", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
+  }
+};
+
+
+
+

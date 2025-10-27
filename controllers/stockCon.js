@@ -20,9 +20,12 @@ export const stockEntry = TryCatch(async (req, res) => {
 
   const totalExpense = distributors.reduce((sum, d) => sum + Number(d.totalPaid || 0), 0);
 
+  const totalStockExpenses = totalExpense
+
   if (existingEntry) {
     // Append new distributors to existing entry
     existingEntry.distributors.push(...distributors);
+    
     existingEntry.totalStockExpenses += totalExpense;
 
     await existingEntry.save();
@@ -38,7 +41,7 @@ export const stockEntry = TryCatch(async (req, res) => {
   const newEntry = await Stock.create({
     date: inputDate, // Save current time
     distributors,
-    totalStockExpenses: totalExpense
+    totalStockExpenses
   });
 
   return res.status(201).json({
@@ -49,118 +52,118 @@ export const stockEntry = TryCatch(async (req, res) => {
 });
 
 
-  
 
-export const getStockByDistrubutor = async (req , res) => {
 
-    try {
-        const {name} = req.query
+export const getStockByDistrubutor = async (req, res) => {
 
-        if(!name) {
-            return res.status(400).json({error : 'Please provide distributor name'})
-        }
+  try {
+    const { name } = req.query
 
-        const stocks = await Stock.find({'distributors.name' : {$regex : new RegExp(name , 'i')}})
-
-        if(stocks.length === 0) {
-            return res.status(404).json({error : 'No stock entry found for this distributor'})
-        }
-
-       const filteredStocks = stocks.map(stock => {
-        const matchedMap = stock.distributors.filter(d=>
-            d.name.toLowerCase().includes(name.toLowerCase())
-        )
-
-        return {
-            date : stock.date,
-            distributors : matchedMap ,
-        }
-       })
-
-        res.status(201).json({stocks : filteredStocks})
-
-    } catch(e) {
-        console.log('error occured' , e)
-        res.status(500).json({error : 'Internal server error'})
+    if (!name) {
+      return res.status(400).json({ error: 'Please provide distributor name' })
     }
+
+    const stocks = await Stock.find({ 'distributors.name': { $regex: new RegExp(name, 'i') } })
+
+    if (stocks.length === 0) {
+      return res.status(404).json({ error: 'No stock entry found for this distributor' })
+    }
+
+    const filteredStocks = stocks.map(stock => {
+      const matchedMap = stock.distributors.filter(d =>
+        d.name.toLowerCase().includes(name.toLowerCase())
+      )
+
+      return {
+        date: stock.date,
+        distributors: matchedMap,
+      }
+    })
+
+    res.status(201).json({ stocks: filteredStocks })
+
+  } catch (e) {
+    console.log('error occured', e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
-export const getAllStocks = TryCatch(async(req , res , next) => {
-    const getAllStocks = await Stock.find().sort({date : -1})
-    res.status(201).json({ success : true , data : getAllStocks})
+export const getAllStocks = TryCatch(async (req, res, next) => {
+  const getAllStocks = await Stock.find().sort({ date: -1 })
+  res.status(201).json({ success: true, data: getAllStocks })
 })
 
-export const getStocks = TryCatch(async(req , res , next) => {
-    const today  = new Date() 
-    today.setUTCHours(0,0,0,0)
-    const stockEntry = await Stock.find({date : today})
-    if(!stockEntry) {
-        res.json({success : true , data:[], message : 'No Stock Entry for today'})
-    }
+export const getStocks = TryCatch(async (req, res, next) => {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const stockEntry = await Stock.find({ date: today })
+  if (!stockEntry) {
+    res.json({ success: true, data: [], message: 'No Stock Entry for today' })
+  }
 
-    res.json({success : true , data:[stockEntry]})
+  res.json({ success: true, data: [stockEntry] })
 })
 
 
 export const updateStock = async (req, res) => {
-    try {
-        const { stockId, distributorId } = req.params; // Get stock entry ID and distributor ID
-        const { name, totalPaid } = req.body; // Updated values
+  try {
+    const { stockId, distributorId } = req.params; // Get stock entry ID and distributor ID
+    const { name, totalPaid } = req.body; // Updated values
 
-        const stockEntry = await Stock.findById(stockId);
-        if (!stockEntry) {
-            return res.status(404).json({success : false,  message: 'Stock entry not found' });
-        }
-
-        // Find distributor inside the stock entry
-        const distributor = stockEntry.distributors.find(d => d._id.toString() === distributorId);
-        if (!distributor) {
-            return res.status(404).json({success : false, message: 'Distributor not found' });
-        }
-
-        // Update distributor details
-        if (name) distributor.name = name;
-        if (totalPaid !== undefined) distributor.totalPaid = totalPaid;
-
-        // Recalculate totalStockExpenses
-        stockEntry.totalStockExpenses = stockEntry.distributors.reduce((sum, d) => sum + d.totalPaid, 0);
-
-        await stockEntry.save();
-
-        res.status(200).json({success : true,  message: 'Distributor updated successfully', stockEntry });
-
-    } catch (e) {
-        console.error('Error:', e);
-        res.status(500).json({success : false, message: 'Internal server error' });
+    const stockEntry = await Stock.findById(stockId);
+    if (!stockEntry) {
+      return res.status(404).json({ success: false, message: 'Stock entry not found' });
     }
+
+    // Find distributor inside the stock entry
+    const distributor = stockEntry.distributors.find(d => d._id.toString() === distributorId);
+    if (!distributor) {
+      return res.status(404).json({ success: false, message: 'Distributor not found' });
+    }
+
+    // Update distributor details
+    if (name) distributor.name = name;
+    if (totalPaid !== undefined) distributor.totalPaid = totalPaid;
+
+    // Recalculate totalStockExpenses
+    stockEntry.totalStockExpenses = stockEntry.distributors.reduce((sum, d) => sum + d.totalPaid, 0);
+
+    await stockEntry.save();
+
+    res.status(200).json({ success: true, message: 'Distributor updated successfully', stockEntry });
+
+  } catch (e) {
+    console.error('Error:', e);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
 };
 
-export const deleteDistributor = async(req , res) =>{
-    try{
+export const deleteDistributor = async (req, res) => {
+  try {
 
-        const {stockId , distributorId} = req.params
+    const { stockId, distributorId } = req.params
 
-        const stockEntry = await Stock.findById(stockId)
-        if(!stockEntry){
-            return res.status(404).json({error : 'Stock entry not found'})
-        }
-        const distToDelete = await stockEntry.distributors.find(d => d._id.toString() === distributorId)
-        if(!distToDelete){
-            return res.status(404).json({error : 'Distributor not found'})
-        }
-
-        stockEntry.distributors = stockEntry.distributors.filter(d => d._id.toString() !== distributorId)
-        stockEntry.totalStockExpenses -= distToDelete.totalPaid
-        await stockEntry.save() 
-        res.status(201).json({ success : true, message : 'Distributor deleted successfully', stockEntry})
-    } catch (e) {
-        console.log(e) 
-        res.status(500).json({error: 'Internal server error'})
+    const stockEntry = await Stock.findById(stockId)
+    if (!stockEntry) {
+      return res.status(404).json({ error: 'Stock entry not found' })
     }
+    const distToDelete = await stockEntry.distributors.find(d => d._id.toString() === distributorId)
+    if (!distToDelete) {
+      return res.status(404).json({ error: 'Distributor not found' })
+    }
+
+    stockEntry.distributors = stockEntry.distributors.filter(d => d._id.toString() !== distributorId)
+    stockEntry.totalStockExpenses -= distToDelete.totalPaid
+    await stockEntry.save()
+    res.status(201).json({ success: true, message: 'Distributor deleted successfully', stockEntry })
+  } catch (e) {
+    console.log(e)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 
-export const remAmt =async (req, res) => {
+export const remAmt = async (req, res) => {
   try {
     const { date, amountHave, stockEntryId, extraSources } = req.body;
 
@@ -170,7 +173,7 @@ export const remAmt =async (req, res) => {
     }
 
     const totalExpense = stockEntry.totalStockExpenses;
-    const extraTotal = (extraSources?.pincode || 0) + (extraSources?.paytm || 0) + (extraSources?.companies?.reduce((sum , c) => sum + Number(c.amount || 0) ,0) || 0)
+    const extraTotal = (extraSources?.paytm || 0) + (extraSources?.companies?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
     const remainingAmount = Number(amountHave) + extraTotal - Number(totalExpense);
 
     // ✅ Check if entry for the date exists
@@ -190,8 +193,8 @@ export const remAmt =async (req, res) => {
         date: new Date(date),
         amountHave,
         remainingAmount,
-        stockEntry : stockEntryId,
-        extraSources : extraSources || {}
+        stockEntry: stockEntryId,
+        extraSources: extraSources || {}
 
       });
       return res.status(201).json({ success: true, message: 'Created successfully', data: newEntry });
@@ -203,26 +206,26 @@ export const remAmt =async (req, res) => {
 };
 
 
-  export const getRemAmt = async (req, res) => {
-    try {
-      const { stockEntryId } = req.params;
-  
-      // First, validate stockEntryId
-      const stockE = await Stock.findById(stockEntryId);
-      if (!stockE) {
-        return res.status(404).json({ error: 'Stock entry not found' });
-      }
-  
-      // Now fetch the remaining amount related to this stock entry
-      const remData = await RemAmount.findOne({ stockEntry: stockEntryId });
-  
-      if (!remData) {
-        return res.status(404).json({ success: false, message: 'Remaining amount not found for this stock entry' });
-      }
-  
-      res.status(200).json({ success: true, data: remData });
-    } catch (e) {
-      console.log('error', e);
-      res.status(500).json({ success: false, error: 'Internal server error' });
+export const getRemAmt = async (req, res) => {
+  try {
+    const { stockEntryId } = req.params;
+
+    // First, validate stockEntryId
+    const stockE = await Stock.findById(stockEntryId);
+    if (!stockE) {
+      return res.status(404).json({ error: 'Stock entry not found' });
     }
-  };
+
+    // Now fetch the remaining amount related to this stock entry
+    const remData = await RemAmount.findOne({ stockEntry: stockEntryId });
+
+    if (!remData) {
+      return res.status(404).json({ success: false, message: 'Remaining amount not found for this stock entry' });
+    }
+
+    res.status(200).json({ success: true, data: remData });
+  } catch (e) {
+    console.log('error', e);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
