@@ -208,7 +208,7 @@ export const getMonthlyProfitLoss = async (req, res) => {
       entriesCount: entries.length,
     });
   } catch (err) {
-    console.error("[getMonthlyProfitLoss error]", err);
+    
     res.status(500).json({
       success: false,
       message: "Internal server error",
