@@ -216,7 +216,3 @@ export const getMonthlyProfitLoss = async (req, res) => {
     });
   }
 };
-
-
-
-

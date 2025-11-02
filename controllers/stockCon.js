@@ -89,9 +89,25 @@ export const getStockByDistrubutor = async (req, res) => {
 }
 
 export const getAllStocks = TryCatch(async (req, res, next) => {
-  const getAllStocks = await Stock.find().sort({ date: -1 })
-  res.status(201).json({ success: true, data: getAllStocks })
-})
+  // Fetch all stocks sorted by date (latest first)
+  const allStocks = await Stock.find().sort({ date: -1 });
+
+  // Enrich each stock with remAmount + amountHave (if found)
+  const enrichedStocks = await Promise.all(
+    allStocks.map(async (stock) => {
+      const remData = await RemAmount.findOne({ stockEntry: stock._id });
+
+      return {
+        ...stock.toObject(),
+        amountHave: remData ? remData.amountHave : 0,
+        remAmount: remData ? remData.remainingAmount : 0,
+      };
+    })
+  );
+
+  res.status(200).json({ success: true, data: enrichedStocks });
+});
+
 
 export const getStocks = TryCatch(async (req, res, next) => {
   const today = new Date()
@@ -229,3 +245,56 @@ export const getRemAmt = async (req, res) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
+
+
+
+// controllers/remAmountController.js
+
+
+
+
+// export const updateRemAmount = async (req, res) => {
+//   try {
+//     const { amountHave } = req.body;
+//     const { stockEntryId } = req.params;
+
+//     // 1️⃣ Find the related stock entry to get total expenses
+//     const stockEntry = await Stock.findById(stockEntryId);
+//     if (!stockEntry) {
+//       return res.status(404).json({ success: false, message: "Stock entry not found" });
+//     }
+
+//     const totalExpense = stockEntry.totalStockExpenses || 0;
+
+//     // 2️⃣ Find existing Remaining Amount record for this stockEntry
+//     const existing = await RemAmount.findOne({ stockEntry: stockEntryId });
+//     if (!existing) {
+//       return res.status(404).json({ success: false, message: "Remaining amount record not found" });
+//     }
+
+//     // 3️⃣ Calculate extra total (if exists)
+//     const extraTotal =
+//       (existing.extraSources?.paytm || 0) +
+//       (existing.extraSources?.companies?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0);
+
+//     // 4️⃣ Recalculate remaining amount = amountHave + extraTotal - totalExpense
+//     const remainingAmount = Number(amountHave) + Number(extraTotal) - Number(totalExpense);
+
+//     // 5️⃣ Update all relevant fields
+//     existing.amountHave = amountHave;
+//     existing.totalStockExpenses = totalExpense;
+//     existing.remainingAmount = remainingAmount;
+
+//     await existing.save();
+
+//     // 6️⃣ Send updated data back
+//     res.json({
+//       success: true,
+//       message: "Amount updated successfully with recalculated remaining amount",
+//       data: existing,
+//     });
+//   } catch (err) {
+//     console.error("Error in updateRemAmount:", err);
+//     res.status(500).json({ success: false, message: "Server error", error: err.message });
+//   }
+// };
