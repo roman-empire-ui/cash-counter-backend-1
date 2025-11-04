@@ -25,7 +25,7 @@ export const stockEntry = TryCatch(async (req, res) => {
   if (existingEntry) {
     // Append new distributors to existing entry
     existingEntry.distributors.push(...distributors);
-    
+
     existingEntry.totalStockExpenses += totalExpense;
 
     await existingEntry.save();
@@ -189,7 +189,7 @@ export const remAmt = async (req, res) => {
     }
 
     const totalExpense = stockEntry.totalStockExpenses;
-    const extraTotal = (extraSources?.paytm || 0) + (extraSources?.companies?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
+    const extraTotal = (extraSources?.paytm || 0) + (extraSources?.company?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
     const remainingAmount = Number(amountHave) + extraTotal - Number(totalExpense);
 
     // ✅ Check if entry for the date exists
@@ -199,6 +199,7 @@ export const remAmt = async (req, res) => {
       // ✅ Update existing
       existing.amountHave = amountHave;
       existing.remainingAmount = remainingAmount;
+      existing.totalStockExpenses = totalExpense
       existing.stockEntry = stockEntryId;
       existing.extraSources = extraSources || {}
       await existing.save();
@@ -208,13 +209,16 @@ export const remAmt = async (req, res) => {
       const newEntry = await RemAmount.create({
         date: new Date(date),
         amountHave,
+        totalStockExpenses: totalExpense,
         remainingAmount,
         stockEntry: stockEntryId,
         extraSources: extraSources || {}
 
       });
       return res.status(201).json({ success: true, message: 'Created successfully', data: newEntry });
+      
     }
+
   } catch (error) {
     console.error('Error in calRem:', error);
     return res.status(500).json({ success: false, message: 'Server error', error });
@@ -234,6 +238,28 @@ export const getRemAmt = async (req, res) => {
 
     // Now fetch the remaining amount related to this stock entry
     const remData = await RemAmount.findOne({ stockEntry: stockEntryId });
+
+    if (!remData) {
+      return res.status(404).json({ success: false, message: 'Remaining amount not found for this stock entry' });
+    }
+
+    res.status(200).json({ success: true, data: remData });
+  } catch (e) {
+    console.log('error', e);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+
+export const getRemAmts = async (req, res) => {
+  try {
+
+
+    // First, validate stockEntryId
+
+
+    // Now fetch the remaining amount related to this stock entry
+    const remData = await RemAmount.find();
 
     if (!remData) {
       return res.status(404).json({ success: false, message: 'Remaining amount not found for this stock entry' });

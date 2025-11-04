@@ -15,6 +15,11 @@ const remainingCashSchema = new mongoose.Schema({
     ref: 'Stock',
     required: true
   },
+  totalStockExpenses : {
+    type : Number,
+    required : true,
+    default : 0,
+  },
   remainingAmount: {
     type: Number,
     required: true
