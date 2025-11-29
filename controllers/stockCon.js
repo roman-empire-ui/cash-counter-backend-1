@@ -6,50 +6,75 @@ export const stockEntry = TryCatch(async (req, res) => {
   const { date, distributors } = req.body;
 
   if (!date || !distributors || distributors.length === 0) {
-    return res.status(400).json({ success: false, message: "Date and distributors are required." });
+    return res.status(400).json({
+      success: false,
+      message: "Date and distributors are required.",
+    });
   }
 
   const inputDate = new Date(date);
   const startOfDay = new Date(inputDate.setHours(0, 0, 0, 0));
   const endOfDay = new Date(inputDate.setHours(23, 59, 59, 999));
 
-  // Check if stock entry already exists for this day
+  // Check if stock entry already exists for this date
   const existingEntry = await Stock.findOne({
-    date: { $gte: startOfDay, $lte: endOfDay }
+    date: { $gte: startOfDay, $lte: endOfDay },
   });
 
-  const totalExpense = distributors.reduce((sum, d) => sum + Number(d.totalPaid || 0), 0);
+  const totalExpense = distributors.reduce(
+    (sum, d) => sum + Number(d.totalPaid || 0),
+    0
+  );
 
-  const totalStockExpenses = totalExpense
-
+  // ================================
+  // UPDATE EXISTING ENTRY
+  // ================================
   if (existingEntry) {
-    // Append new distributors to existing entry
-    existingEntry.distributors.push(...distributors);
+    distributors.forEach((newDist) => {
+      const matched = existingEntry.distributors.find(
+        (d) => d.name.toLowerCase() === newDist.name.toLowerCase()
+      );
 
+      if (matched) {
+        // Supplier already exists → merge invoice numbers
+        matched.inv = [...new Set([...matched.inv, ...newDist.inv])];
+
+        // Add new paid amount
+        matched.totalPaid += Number(newDist.totalPaid || 0);
+      } else {
+        // Supplier not found → append as new supplier
+        existingEntry.distributors.push(newDist);
+      }
+    });
+
+    // Update total expenses
     existingEntry.totalStockExpenses += totalExpense;
 
     await existingEntry.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Stock entry updated successfully.',
-      data: existingEntry
+      message: "Stock entry updated successfully.",
+      data: existingEntry,
     });
   }
 
-  // If no entry exists for the day, create a new one
+  // ================================
+  // CREATE NEW ENTRY
+  // ================================
   const newEntry = await Stock.create({
-    date: inputDate, // Save current time
+    date: inputDate,
     distributors,
-    totalStockExpenses
+    totalStockExpenses: totalExpense,
   });
 
   return res.status(201).json({
     success: true,
-    message: 'Stock entry created successfully.',
-    data: newEntry
+    message: "Stock entry created successfully.",
+    data: newEntry,
   });
 });
+
 
 
 
@@ -87,6 +112,46 @@ export const getStockByDistrubutor = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+
+
+export const getStockByDate = async (req, res) => {
+  try {
+  const { date } = req.query;
+  
+ 
+  if (date) {
+    const queryDate = new Date(date);
+  
+    // Build range for that day (UTC safe)
+    const startOfDay = new Date(queryDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+  
+    const endOfDay = new Date(queryDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+  
+    const entry = await Stock.find({
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
+  
+    if (!entry || entry.length === 0) {
+      return res.status(404).json({ message: "No data found for this date" });
+    }
+  
+    return res.status(200).json({ message: "Data found", data: entry });
+  }
+  
+  // If no date given, return all sorted
+  const allEntries = await Stock.find().sort({ date: -1 });
+  return res.status(200).json(allEntries);
+  
+  
+  } catch (e) {
+  console.error("[getStockByDate error]", e);
+  return res.status(500).json({ message: "Internal server error", error: e.message });
+  }
+  };
+  
 
 export const getAllStocks = TryCatch(async (req, res, next) => {
   // Fetch all stocks sorted by date (latest first)
@@ -189,8 +254,8 @@ export const remAmt = async (req, res) => {
     }
 
     const totalExpense = stockEntry.totalStockExpenses;
-    const extraTotal = (extraSources?.paytm || 0) + (extraSources?.company?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
-    const remainingAmount = Number(amountHave) + extraTotal - Number(totalExpense);
+    // const extraTotal = (extraSources?.paytm || 0) + (extraSources?.company?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
+    const remainingAmount = Number(amountHave) - Number(totalExpense);
 
     // ✅ Check if entry for the date exists
     const existing = await RemAmount.findOne({ date: new Date(date) });

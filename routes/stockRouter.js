@@ -1,5 +1,5 @@
 import express from 'express'
-import { deleteDistributor, getAllStocks, getRemAmt, getRemAmts, getStockByDistrubutor, getStocks, remAmt, stockEntry, updateStock } from '../controllers/stockCon.js';
+import { deleteDistributor, getAllStocks, getRemAmt, getRemAmts, getStockByDate, getStockByDistrubutor, getStocks, remAmt, stockEntry, updateStock } from '../controllers/stockCon.js';
 import AuthUser from '../middlewares/Auth.js';
 
 const app = express.Router() 
@@ -16,6 +16,7 @@ app.get('/getStocks', AuthUser, getStocks)
 app.post('/remAmount' , AuthUser, remAmt)
 app.get("/getRemAmount/:stockEntryId", AuthUser, getRemAmt);
 app.get('/get-rem-amounts' , getRemAmts)
+app.get('/stock-by-date' , getStockByDate)
 // app.put('/updateAmountHave/:stockEnId' , updateRemAmount)
 
 export default app;

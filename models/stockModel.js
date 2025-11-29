@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
-const companySchema = new Schema({
-    name : {type : String , required : true},
-    amount : {type : Number , required : true}
-})
+
 
 const stockSchema = new Schema(
     {
@@ -16,13 +13,14 @@ const stockSchema = new Schema(
         distributors: [
             {
                 name: { type: String, required: true },
-                totalPaid: { type: Number, required: true }
+                totalPaid: { type: Number, required: true },
+                inv : [{type : String}]
             }
         ],
         totalStockExpenses: { type: Number, required: true },
 
-        paytm : {type: Number , default : 0},
-        companies : {type : [companySchema] , default : []}
+        
+       
     },
     { timestamps: true }
 );
