@@ -389,3 +389,38 @@ export const getRemAmts = async (req, res) => {
 //     res.status(500).json({ success: false, message: "Server error", error: err.message });
 //   }
 // };
+
+
+export const getStockByDateRange = async(req , res) => {
+
+  try {
+    let {fromDate , toDate} = req.query 
+
+
+    if(!fromDate || !toDate) {
+      return res.status(401).json({
+        success : false,
+        message : 'from and to date must be provided'
+      })
+    }
+
+    const start = new Date(fromDate)
+    const end = new Date(toDate)
+
+    end.setHours(23 , 59 , 59 , 999)
+
+    const stocks = await Stock.find({
+      date: {$gte : start , $lte : end}
+    }).sort({date : -1})
+
+    return res.status(200).json({
+      success : true,
+      message : 'Stocks found',
+      data : stocks
+    })
+
+  } catch(e) {
+    console.log('error getting data by date Range' , e)
+    return res.status(500).json({message : 'Internal server error'})
+  }
+}
