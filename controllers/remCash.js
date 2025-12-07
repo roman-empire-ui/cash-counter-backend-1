@@ -216,3 +216,33 @@ export const getMonthlyProfitLoss = async (req, res) => {
     });
   }
 };
+
+
+export const getRemDataByRange = async(req, res) =>{
+
+  try {
+    const {from , to} = req.query 
+    if(!from || !to) {
+      return res.status(400).json({message : 'From and to must be provided'})
+    }
+
+    const startDate = new Date(from)
+    const endDate = new Date(to)
+
+    startDate.setUTCHours(0,0,0,0)
+    endDate.setUTCHours(23 , 59 , 59 , 999)
+
+    const entries = await RemCash.find({
+      date : {$gte : startDate , $lte : endDate}
+    }).sort({date : -1})
+
+    if(!entries || entries.length === 0) {
+      return res.status(404).json({success : false , message : 'No data found in this date range'})
+    }
+
+    return res.status(200).json({success: true , data : entries})
+  } catch (e) {
+    console.log('error' , e)
+    res.status(500).json({success : false , message : 'Internal server error'})
+  }
+} 
