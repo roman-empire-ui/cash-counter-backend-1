@@ -3,13 +3,10 @@ import RemCash from "../models/remainingCashModel.js";
 
 
 
-import { sendWhatsAppMessage, initWhatsApp } from "../utils/whatsapp.js";
-
-// Initialize WhatsApp client once
-initWhatsApp();
 
 export const saveRemainingCash = async (req, res) => {
   try {
+    // debugging helper: uncomment if you need to inspect what frontend sends
     console.log("[saveRemainingCash] body:", JSON.stringify(req.body));
 
     const {
@@ -31,7 +28,7 @@ export const saveRemainingCash = async (req, res) => {
     const entryDate = new Date(date);
     entryDate.setUTCHours(0, 0, 0, 0);
 
-    // Notes & Coins
+    // Clean notes and coins
     const validNotes = (notes || []).map((n) => ({
       denomination: Number(n.denomination),
       count: Number(n.count) || 0,
@@ -44,12 +41,13 @@ export const saveRemainingCash = async (req, res) => {
       total: (Number(c.denomination) || 0) * (Number(c.count) || 0),
     }));
 
+    // Physical cash
     const totalCash = [...validNotes, ...validCoins].reduce(
       (sum, item) => sum + item.total,
       0
     );
 
-    // Company payments
+    // Companies paid (normalize)
     const validCompanies = (companies || []).map((c) => ({
       name: c.name || "",
       paidAmount: Number(c.paidAmount ?? c.paid ?? c.amount) || 0,
@@ -60,7 +58,7 @@ export const saveRemainingCash = async (req, res) => {
       0
     );
 
-    // Total calculation
+    // Total from digital + extra - opening balance - company payments
     const totalRemainingCash =
       totalCash +
       totalCompanyPayments +
@@ -69,34 +67,14 @@ export const saveRemainingCash = async (req, res) => {
       (Number(additional) || 0) -
       (Number(openingBalance) || 0);
 
-    const diff = (Number(posibleOfflineAmount) || 0) - totalRemainingCash;
+    // Difference and net P/L
+    const diff =
+      (Number(posibleOfflineAmount) || 0) - totalRemainingCash;
     const netPL = diff - (Number(otherPayments) || 0);
 
-    // Prepare WhatsApp summary message
-    const summaryMsg = `
-📊 *Daily Cash Summary*
-
-🗓 Date: ${entryDate.toDateString()}
-
-💵 Cash Total: ₹${totalCash}
-📲 Paytm: ₹${paytm}
-💳 Card: ₹${card}
-🏢 Company Paid: ₹${totalCompanyPayments}
-
-💰 Total Cash + Company: ₹${totalCash + totalCompanyPayments}
-🧮 Overall Cash Total: ₹${totalRemainingCash}
-
-📉 Final Total(-OPB): ₹${totalRemainingCash - openingBalance}
-📦 Overall Sales: ₹${posibleOfflineAmount}
-
-⚖ Difference: ₹${diff}
-📈 Profit/Loss: ₹${netPL}
-
-📝 Remarks: ${remarks || "No remarks"}
-`;
-
-    // Check if entry already exists
+    // Check existing
     let existing = await RemCash.findOne({ date: entryDate });
+
     if (existing) {
       existing.notes = validNotes;
       existing.coins = validCoins;
@@ -107,8 +85,10 @@ export const saveRemainingCash = async (req, res) => {
       existing.openingBalance = Number(openingBalance) || 0;
       existing.totalRemainingCash = totalRemainingCash;
       existing.companies = validCompanies;
-      existing.posibleOfflineAmount = Number(posibleOfflineAmount) || 0;
-      existing.posibleOnlineAmount = Number(posibleOnlineAmount) || 0;
+      existing.posibleOfflineAmount =
+        Number(posibleOfflineAmount) || 0;
+      existing.posibleOnlineAmount =
+        Number(posibleOnlineAmount) || 0;
       existing.difference = diff;
       existing.otherPayments = Number(otherPayments) || 0;
       existing.netProfitLoss = netPL;
@@ -116,19 +96,14 @@ export const saveRemainingCash = async (req, res) => {
 
       await existing.save();
 
-      // 🚀 Fire & Forget WhatsApp message
-      sendWhatsAppMessage(process.env.MOBILE_NUMBER, summaryMsg)
-        .then(() => console.log("WhatsApp message sent (background)"))
-        .catch((err) => console.log("WhatsApp error (background):", err));
-
       return res.status(200).json({
         success: true,
-        message: "Remaining cash updated",
+        message: "Remaining cash updated for this date",
         remainingCash: existing,
       });
     }
 
-    // Create new entry
+    // New entry
     const newEntry = new RemCash({
       date: entryDate,
       notes: validNotes,
@@ -150,14 +125,9 @@ export const saveRemainingCash = async (req, res) => {
 
     await newEntry.save();
 
-    // 🚀 Fire & Forget WhatsApp message
-    sendWhatsAppMessage(process.env.MOBILE_NUMBER, summaryMsg)
-      .then(() => console.log("WhatsApp message sent (background)"))
-      .catch((err) => console.log("WhatsApp error (background):", err));
-
     return res.status(201).json({
       success: true,
-      message: "Remaining cash saved",
+      message: "Remaining cash saved for this date",
       remainingCash: newEntry,
     });
   } catch (e) {
@@ -169,6 +139,7 @@ export const saveRemainingCash = async (req, res) => {
     });
   }
 };
+;
 
 
 

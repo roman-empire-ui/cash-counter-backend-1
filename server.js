@@ -11,7 +11,7 @@ import stockRoutes from './routes/stockRouter.js'
 import counterRoutes from './routes/counterRouter.js'
 import distRoutes from './routes/distributorRouter.js'
 import handRoutes from './routes/counterHanRouter.js'
-import { initWhatsApp, getQRCodeDataURL } from "./utils/whatsapp.js";
+
 
 //Using middlewares
 const app = express()
@@ -40,20 +40,7 @@ app.use('/api/v1/counter' , counterRoutes)
 app.use("/api/v1/dist", distRoutes);
 app.use('/api/v1/speech',handRoutes)
 
-initWhatsApp()
 
-app.get("/qr", (req, res) => {
-  const qr = getQRCodeDataURL();
-  if (!qr) return res.send("QR not generated yet. Wait 5 seconds...");
-
-  res.send(`
-    <div style="text-align:center; font-family:Arial;">
-      <h2>Scan this QR with WhatsApp</h2>
-      <img src="${qr}" style="width:300px;"/>
-      <p>Open WhatsApp → Linked Devices → Scan QR</p>
-    </div>
-  `);
-});
 //Connecting Database
 connectToDB()
 
