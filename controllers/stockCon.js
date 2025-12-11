@@ -254,8 +254,8 @@ export const remAmt = async (req, res) => {
     }
 
     const totalExpense = stockEntry.totalStockExpenses;
-    // const extraTotal = (extraSources?.paytm || 0) + (extraSources?.company?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
-    const remainingAmount = Number(amountHave) - Number(totalExpense);
+     const extraTotal = (extraSources?.paytm || 0) + (extraSources?.company?.reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0)
+    const remainingAmount = Number(amountHave) + extraTotal  - Number(totalExpense);
 
     // ✅ Check if entry for the date exists
     const existing = await RemAmount.findOne({ date: new Date(date) });
