@@ -318,42 +318,31 @@ export const getRemAmt = async (req, res) => {
 
 export const getRemAmts = async (req, res) => {
   try {
-    const { from, to } = req.query;
+    // First, validate stockEntryId
 
-    // Validate date inputs
-    if (!from || !to) {
-      return res.status(400).json({
-        success: false,
-        message: "startDate and endDate are required",
-      });
-    }
+    // Now fetch the remaining amount related to this stock entry
+    const remData = await RemAmount.find();
 
-    const remData = await RemAmount.find({
-      date: {
-        $gte: new Date(from),
-        $lte: new Date(to),
-      },
-    }).sort({ date: 1 });
-
-    if (!remData.length) {
+    if (!remData) {
       return res.status(404).json({
         success: false,
-        message: "No remaining amounts found for this date range",
+        message: 'Remaining amount not found for this stock entry'
       });
     }
 
     res.status(200).json({
       success: true,
-      data: remData,
+      data: remData
     });
   } catch (e) {
-    console.log("error", e);
+    console.log('error', e);
     res.status(500).json({
       success: false,
-      error: "Internal server error",
+      error: 'Internal server error'
     });
   }
 };
+
 
 
 
