@@ -11,28 +11,32 @@ const questions = [
         priority: 1,
       },
 
-    
+      {
+        text: "Have you Paid Milk bill?",
+        category: "Shopping",
+        priority: 2,
+      },
 
      
   // WATER
   {
     text: "Did you pay for water today?",
     category: "WATER",
-    priority: 2,
+    priority: 3,
   },
 
   // ELECTRICITY
   {
     text: "Any electricity-related expense today?",
     category: "ELECTRICITY",
-    priority: 9,
+    priority: 10,
   },
 
   // COURIER
   {
     text: "Any Zepto, Instamart, BlinkIt Charges today?",
     category: "COURIER",
-    priority: 3,
+    priority: 4,
   },
 
 
@@ -43,35 +47,35 @@ const questions = [
   {
     text: "Did you give salary or advance to staff today?",
     category: "STAFF",
-    priority: 4,
+    priority: 5,
   },
 
   // RENT
   {
     text: "Any shop rent payment today?",
     category: "RENT",
-    priority: 5,
+    priority: 6,
   },
 
   // INTERNET
   {
     text: "Any internet or phone recharge expense today?",
     category: "INTERNET",
-    priority: 6,
+    priority: 7,
   },
 
   // PERSONAL
   {
     text: "Did you spend personal money from business cash?",
     category: "PERSONAL",
-    priority: 7,
+    priority: 8,
   },
 
   // OTHER
   {
     text: "Any other expense not yet recorded?",
     category: "OTHER",
-    priority: 8,
+    priority: 9,
   },
 ];
 

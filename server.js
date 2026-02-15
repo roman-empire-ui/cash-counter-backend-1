@@ -12,7 +12,7 @@ import counterRoutes from './routes/counterRouter.js'
 import distRoutes from './routes/distributorRouter.js'
 import handRoutes from './routes/counterHanRouter.js'
 import aiRouters from './routes/aiRouter.js'
- //import seedQuestions from './db/seedQuest.js'
+//  import seedQuestions from './db/seedQuest.js'
 
 
 //Using middlewares
@@ -46,7 +46,7 @@ app.use('/api/v1/ai', aiRouters)
 
 //Connecting Database
 connectToDB()
-//  seedQuestions()
+  // seedQuestions()
 
 
 
