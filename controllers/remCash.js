@@ -1,6 +1,29 @@
 // controllers/remainingCashController.js
 import RemCash from "../models/remainingCashModel.js";
+import LossSession from "../models/lossLearnModel.js";
 
+
+
+const upsertLossSession = async (entryDate, netPL) => {
+  if (netPL > 0) {
+    const existing = await LossSession.findOne({ date: entryDate });
+
+    if (!existing) {
+      await LossSession.create({
+        date: entryDate,
+        lossAmount: netPL,
+      });
+    } else {
+      existing.lossAmount = netPL;
+      await existing.save();
+    }
+  } else {
+    await LossSession.findOneAndUpdate(
+      { date: entryDate },
+      { resolved: true, resolvedBy: "NO_LOSS" }
+    );
+  }
+};
 
 
 
@@ -95,6 +118,8 @@ export const saveRemainingCash = async (req, res) => {
       existing.remarks = remarks || "";
 
       await existing.save();
+      await upsertLossSession(entryDate, diff);
+
 
       return res.status(200).json({
         success: true,
@@ -124,6 +149,7 @@ export const saveRemainingCash = async (req, res) => {
     });
 
     await newEntry.save();
+    await upsertLossSession(entryDate, diff);
 
     return res.status(201).json({
       success: true,
@@ -262,3 +288,5 @@ export const getRemDataByRange = async(req, res) =>{
     res.status(500).json({success : false , message : 'Internal server error'})
   }
 } 
+
+
