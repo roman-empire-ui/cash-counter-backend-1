@@ -12,6 +12,8 @@ import counterRoutes from './routes/counterRouter.js'
 import distRoutes from './routes/distributorRouter.js'
 import handRoutes from './routes/counterHanRouter.js'
 import aiRouters from './routes/aiRouter.js'
+import employeeRouters from './routes/employeeRouter.js'
+import attendanceRouters from './routes/attendanceRouter.js'
 //  import seedQuestions from './db/seedQuest.js'
 
 
@@ -42,6 +44,8 @@ app.use('/api/v1/counter' , counterRoutes)
 app.use("/api/v1/dist", distRoutes);
 app.use('/api/v1/speech',handRoutes)
 app.use('/api/v1/ai', aiRouters)
+app.use('/api/v1/employee', employeeRouters)
+app.use('/api/v1/attendance', attendanceRouters)
 
 
 //Connecting Database
