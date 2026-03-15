@@ -42,7 +42,7 @@ const employeeSchema = new Schema(
 employeeSchema.pre("save", function (next) {
   if (this.isModified("role")) {
     if (this.role === "Manager") {
-      this.allowedWeekOffs = 0;
+      this.allowedWeekOffs = 1;
     } else {
       this.allowedWeekOffs = 2;
     }
